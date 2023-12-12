@@ -58,13 +58,13 @@ func numViableStrategies(timeMillis int, distMillim int) int {
 
 	// If the quadratic equation has less than two real solutions,
 	// there are no viable strategies.
-	d := timeMillis * timeMillis - 4 * distMillim
+	d := timeMillis*timeMillis - 4*distMillim
 	if d <= 0 {
 		return 0
 	}
 
 	sqrtd := math.Sqrt(float64(d))
-	leftBound := (float64(timeMillis) - sqrtd) / 2.0	
+	leftBound := (float64(timeMillis) - sqrtd) / 2.0
 	rightBound := (float64(timeMillis) + sqrtd) / 2.0
 	minViable := int(math.Floor(leftBound)) + 1
 	maxViable := int(math.Ceil(rightBound)) - 1
@@ -81,7 +81,7 @@ func computeStrategyProduct(inputPath string) (int, error) {
 		return -1, err
 	}
 	defer inputFile.Close()
-	
+
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(bufio.ScanLines)
 
