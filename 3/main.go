@@ -16,6 +16,11 @@ type irange struct {
 	end   int // not inclusive
 }
 
+type iposition struct {
+	row int
+	col int
+}
+
 func findDigitRanges(s string) []irange {
 	ranges := make([]irange, 0, 10) // Arbitrary initial capacity.
 	inRange := false
@@ -35,42 +40,50 @@ func findDigitRanges(s string) []irange {
 	return ranges
 }
 
-func isSymbol(b byte) bool {
-	return b != '.' && !unicode.IsDigit(rune(b))
-}
-
-func isPartNumber(r irange, prevLine, line, nextLine string) bool {
-	if r.start > 0 && isSymbol(line[r.start-1]) {
-		return true
+func adjacentGears(r irange, prevLine, line, nextLine string) []iposition {
+	// Initialize to arbitrary small capacity.
+	gears := make([]iposition, 0, 10)
+	if r.start > 0 && line[r.start-1] == '*' {
+		gears = append(gears, iposition{row: 0, col: r.start - 1})
 	}
-	if r.end < len(line) && isSymbol(line[r.end]) {
-		return true
+	if r.end < len(line) && line[r.end] == '*' {
+		gears = append(gears, iposition{row: 0, col: r.end})
 	}
 
 	end := min(r.end+1, len(line))
 	for i := max(0, r.start-1); i < end; i++ {
-		if isSymbol(prevLine[i]) || isSymbol(nextLine[i]) {
-			return true
+		if prevLine[i] == '*' {
+			gears = append(gears, iposition{row: -1, col: i})
+		}
+		if nextLine[i] == '*' {
+			gears = append(gears, iposition{row: 1, col: i})
 		}
 	}
-
-	return false
+	return gears
 }
 
-func partNumberSum(prevLine, line, nextLine string) (int, error) {
+type gearMap map[iposition][]int
+
+func (gears gearMap) updateParts(index int, prev, line, next string) error {
 	sum := 0
 	digitRanges := findDigitRanges(line)
 	for _, r := range digitRanges {
-		if !isPartNumber(r, prevLine, line, nextLine) {
+		pos := adjacentGears(r, prev, line, next)
+		if len(pos) == 0 {
 			continue
 		}
 		num, err := strconv.Atoi(line[r.start:r.end])
 		if err != nil {
-			return 0, err
+			return err
+		}
+
+		for _, p := range pos {
+			absp := iposition{row: index + p.row, col: p.col}
+			gears[absp] = append(gears[absp], num)
 		}
 		sum += num
 	}
-	return sum, nil
+	return nil
 }
 
 func makeString(b byte, l int) string {
@@ -81,14 +94,13 @@ func makeString(b byte, l int) string {
 	return string(bytes)
 }
 
-func computePartNumberSum(inputPath string) (int, error) {
+func computeGearRatioSum(inputPath string) (int, error) {
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
 		return -1, err
 	}
 	defer inputFile.Close()
 
-	sum := 0
 	reader := bufio.NewReader(inputFile)
 
 	// Read first line to determine the length of all lines.
@@ -96,11 +108,14 @@ func computePartNumberSum(inputPath string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	gears := make(gearMap)
 	// TODO: Fail if lines not equal in length.
 	// TODO: Improve parsing and avoid the []byte - string dance.
 	line := string(lineBytes)
 	length := len(line)
 	prevLine := makeString('.', length)
+	i := 0
 	for {
 		nextLineBytes, _, err := reader.ReadLine()
 		if err == io.EOF {
@@ -112,19 +127,28 @@ func computePartNumberSum(inputPath string) (int, error) {
 		}
 
 		nextLine := string(nextLineBytes)
-		lineSum, err := partNumberSum(prevLine, line, nextLine)
+		err = gears.updateParts(i, prevLine, line, nextLine)
 		if err != nil {
 			return 0, err
 		}
-		sum += lineSum
 		prevLine = line
 		line = nextLine
+		i++
 
 	}
 	nextLine := makeString('.', length)
-	s, err := partNumberSum(prevLine, line, nextLine)
-	sum += s
-	return sum, err
+	err = gears.updateParts(i, prevLine, line, nextLine)
+	if err != nil {
+		return 0, err
+	}
+
+	sum := 0
+	for _, parts := range gears {
+		if len(parts) == 2 {
+			sum += parts[0] * parts[1]
+		}
+	}
+	return sum, nil
 }
 
 func main() {
@@ -135,7 +159,7 @@ func main() {
 		log.Fatal("Flag --input_path must be non-empty!")
 	}
 
-	sum, err := computePartNumberSum(*inputPathFlag)
+	sum, err := computeGearRatioSum(*inputPathFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
