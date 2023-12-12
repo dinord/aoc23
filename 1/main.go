@@ -84,7 +84,6 @@ func computeCalibrationValue(inputPath string) int {
 			log.Fatal("Failed to read line from input file: ", err)
 		}
 		calibrationValue += extractLineValue(line)
-
 	}
 	return calibrationValue
 }
