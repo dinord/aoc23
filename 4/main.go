@@ -56,7 +56,7 @@ func parseScratchCard(s string) (wins []int, scratches []int, err error) {
 	return wins, scratches, nil
 }
 
-func computeScratchScore(wins []int, scratches []int) int {
+func scratchMatches(wins []int, scratches []int) int {
 	matches := 0
 	winSet := make(map[int]struct{})
 	for _, w := range wins {
@@ -68,35 +68,58 @@ func computeScratchScore(wins []int, scratches []int) int {
 			matches++
 		}
 	}
-	if matches > 0 {
-		return 1 << (matches - 1)
-	} else {
-		return 0
-	}
+	return matches
 }
 
-func computeTotalScratchScore(inputPath string) (points int, err error) {
+func loadScratchMatches(inputPath string) (matches []int, err error) {
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 	defer inputFile.Close()
 
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(bufio.ScanLines)
-	score := 0
+	matches = make([]int, 0, 10) // arbitrary capacity
 	for scanner.Scan() {
 		wins, scratches, err := parseScratchCard(scanner.Text())
 		if err != nil {
-			return -1, err
+			return nil, err
 		}
-		score += computeScratchScore(wins, scratches)
+		matches = append(matches, scratchMatches(wins, scratches))
 	}
 	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return matches, nil
+}
+
+func computeScratchCardCount(inputPath string) (count int, err error) {
+	matches, err := loadScratchMatches(inputPath)
+	if err != nil {
 		return -1, err
 	}
 
-	return score, nil
+	// This can be nlogn with heap.
+	// Probably linear with monotonic queue.
+	// Ain't got time for that, I have work tomorrow.
+	mlen := len(matches)
+	multipliers := make([]int, mlen)
+	for i, _ := range multipliers {
+		multipliers[i] = 1
+	}
+
+	for i, m := range matches {
+		for j := i; j < i+m && j < mlen-1; j++ {
+			multipliers[j+1] += multipliers[i]
+		}
+	}
+
+	count = 0
+	for _, m := range multipliers {
+		count += m
+	}
+	return count, nil
 }
 
 func main() {
@@ -107,7 +130,7 @@ func main() {
 		log.Fatal("Flag --input_path must be non-empty!")
 	}
 
-	points, err := computeTotalScratchScore(*inputPathFlag)
+	points, err := computeScratchCardCount(*inputPathFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
