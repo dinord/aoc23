@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+const Joker int = 1
+
 var cardRanks = map[rune]int{
 	'2': 2,
 	'3': 3,
@@ -21,7 +23,7 @@ var cardRanks = map[rune]int{
 	'8': 8,
 	'9': 9,
 	'T': 10,
-	'J': 11,
+	'J': Joker,
 	'Q': 12,
 	'K': 13,
 	'A': 14,
@@ -47,13 +49,28 @@ type hand struct {
 
 func (this hand) Type() handType {
 	cardCounts := make(map[int]int)
+	jokerCount := 0
 	for _, card := range this.cards {
+		if card == Joker {
+			jokerCount++
+			continue
+		}
 		c, ok := cardCounts[card]
 		if !ok {
 			c = 0
 		}
 		cardCounts[card] = c + 1
 	}
+
+	maxCount := 0
+	maxCard := 0
+	for card, c := range cardCounts {
+		if c > maxCount {
+			maxCount = c
+			maxCard = card
+		}
+	}
+	cardCounts[maxCard] += jokerCount
 
 	var counts [6]int
 	for _, c := range cardCounts {
