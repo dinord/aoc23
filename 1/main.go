@@ -12,8 +12,6 @@ import (
 	"strings"
 )
 
-var inputPathFlag = flag.String("input_path", "", "Path to puzzle input file")
-
 var digitToValue = map[string]int{
 	"zero":  0,
 	"one":   1,
@@ -66,7 +64,7 @@ func extractLineValue(line []byte) int {
 }
 
 func computeCalibrationValue(inputPath string) int {
-	inputFile, err := os.Open(*inputPathFlag)
+	inputFile, err := os.Open(inputPath)
 	if err != nil {
 		log.Fatal("Unable to open input file: ", err)
 	}
@@ -89,10 +87,11 @@ func computeCalibrationValue(inputPath string) int {
 }
 
 func main() {
+	inputPathFlag := flag.String("input_path", "", "Path to puzzle input file")
 	flag.Parse()
-
 	if *inputPathFlag == "" {
 		log.Fatal("Flag --input_path must be non-empty!")
 	}
+
 	fmt.Println(computeCalibrationValue(*inputPathFlag))
 }

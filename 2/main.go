@@ -1,4 +1,4 @@
-package main
+ package main
 
 import (
 	"bufio"
@@ -10,8 +10,6 @@ import (
 	"os"
 	"strings"
 )
-
-var inputPathFlag = flag.String("input_path", "", "Path to puzzle input file")
 
 type cubeSet struct {
 	red   int
@@ -83,7 +81,7 @@ func minFeasibleSet(sets []cubeSet) (min cubeSet, err error) {
 }
 
 func computePowerSum(inputPath string, limits cubeSet) int {
-	inputFile, err := os.Open(*inputPathFlag)
+	inputFile, err := os.Open(inputPath)
 	if err != nil {
 		log.Fatal("Unable to open input file: ", err)
 	}
@@ -115,11 +113,12 @@ func computePowerSum(inputPath string, limits cubeSet) int {
 }
 
 func main() {
+	inputPathFlag := flag.String("input_path", "", "Path to puzzle input file")
 	flag.Parse()
-
 	if *inputPathFlag == "" {
 		log.Fatal("Flag --input_path must be non-empty!")
 	}
+
 	cubeLimits := cubeSet{red: 12, green: 13, blue: 14}
 	fmt.Println(computePowerSum(*inputPathFlag, cubeLimits))
 }
