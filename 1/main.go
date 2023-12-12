@@ -1,14 +1,16 @@
 package main
 
-import "bufio"
-import "flag"
-import "fmt"
-import "io"
-import "log"
-import "math"
-import "os"
-import "slices"
-import "strings"
+import (
+	"bufio"
+	"flag"
+	"fmt"
+	"io"
+	"log"
+	"math"
+	"os"
+	"slices"
+	"strings"
+)
 
 var inputPathFlag = flag.String("input_path", "", "Path to puzzle input file")
 
@@ -52,6 +54,17 @@ func findFirstDigit(line string, reverseKey bool) (value int, index int) {
 	return firstValue, firstDigitIndex
 }
 
+func extractLineValue(line []byte) int {
+	firstDigit, firstIndex := findFirstDigit(string(line), false)
+	slices.Reverse(line)
+	lastDigit, lastIndex := findFirstDigit(string(line), true)
+
+	if firstIndex == -1 || lastIndex == -1 {
+		log.Fatal("Expecting at least one digit per line, found none in: ", string(line))
+	}
+	return (firstDigit*10 + lastDigit)
+}
+
 func computeCalibrationValue(inputPath string) int {
 	inputFile, err := os.Open(*inputPathFlag)
 	if err != nil {
@@ -70,15 +83,8 @@ func computeCalibrationValue(inputPath string) int {
 			}
 			log.Fatal("Failed to read line from input file: ", err)
 		}
+		calibrationValue += extractLineValue(line)
 
-		firstDigit, firstIndex := findFirstDigit(string(line), false)
-		slices.Reverse(line)
-		lastDigit, lastIndex := findFirstDigit(string(line), true)
-
-		if firstIndex == -1 || lastIndex == -1 {
-			log.Fatal("Expecting at least one digit per line, found none in: ", string(line))
-		}
-		calibrationValue += (firstDigit*10 + lastDigit)
 	}
 	return calibrationValue
 }
