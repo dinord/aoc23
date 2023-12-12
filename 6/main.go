@@ -12,32 +12,17 @@ import (
 	"strings"
 )
 
-// TODO: Reuse this from common library instead of copying from day 4.
-func parseInts(s string) ([]int, error) {
-	ints := make([]int, 0, 10) // arbitrary capacity
-	tokens := strings.Split(strings.Trim(s, " "), " ")
-	for _, t := range tokens {
-		if t == "" {
-			continue
-		}
-		i, err := strconv.Atoi(t)
-		if err != nil {
-			return nil, err
-		}
-		ints = append(ints, i)
-	}
-	return ints, nil
-}
-
-func scanIntsWithPrefix(scanner *bufio.Scanner, prefix string) ([]int, error) {
+func scanPrefixedKernedInt(scanner *bufio.Scanner, prefix string) (int, error) {
 	if !scanner.Scan() {
-		return nil, errors.New("Expected another token!")
+		return -1, errors.New("Expected another token!")
 	}
 	token := scanner.Text()
 	if strings.Index(token, prefix) != 0 {
-		return nil, fmt.Errorf("Expected token with prefix `%s`, got: %s", prefix, token)
+		return -1, fmt.Errorf("Expected token with prefix `%s`, got: %s", prefix, token)
 	}
-	return parseInts(token[len(prefix):])
+
+	intToken := strings.ReplaceAll(token[len(prefix):], " ", "")
+	return strconv.Atoi(intToken)
 }
 
 // Computes the number of viable strategies for covering
@@ -75,34 +60,25 @@ func numViableStrategies(timeMillis int, distMillim int) int {
 	return maxViable - minViable + 1
 }
 
-func computeStrategyProduct(inputPath string) (int, error) {
+func loadTimeAndDistance(inputPath string) (timeMillis int, distanceMillim int, err error) {
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
-		return -1, err
+		return
 	}
 	defer inputFile.Close()
 
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(bufio.ScanLines)
 
-	timesMillis, err := scanIntsWithPrefix(scanner, "Time:")
+	timeMillis, err = scanPrefixedKernedInt(scanner, "Time:")
 	if err != nil {
-		return -1, err
+		return
 	}
-	distancesMillim, err := scanIntsWithPrefix(scanner, "Distance:")
+	distanceMillim, err = scanPrefixedKernedInt(scanner, "Distance:")
 	if err != nil {
-		return -1, err
+		return
 	}
-
-	if len(timesMillis) != len(distancesMillim) {
-		return -1, errors.New("Different number of times and distances!")
-	}
-
-	p := 1
-	for i := 0; i < len(timesMillis); i++ {
-		p *= numViableStrategies(timesMillis[i], distancesMillim[i])
-	}
-	return p, nil
+	return
 }
 
 func main() {
@@ -113,10 +89,9 @@ func main() {
 		log.Fatal("Flag --input_path must be non-empty!")
 	}
 
-	points, err := computeStrategyProduct(*inputPathFlag)
+	timeMillis, distanceMillim, err := loadTimeAndDistance(*inputPathFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(points)
-
+	fmt.Println(numViableStrategies(timeMillis, distanceMillim))
 }
